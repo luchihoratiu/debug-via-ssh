@@ -1,0 +1,15 @@
+---
+name: Tests the action
+
+on: [push]
+
+jobs:
+  run_action:
+    runs-on: windows-latest
+    name: Run action
+    steps:
+    - uses: luchihoratiu/debug-via-ssh@dev
+      with:
+        SSH_PASS: ${{ secrets.SSH_PASS }}
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        NGROK_TIMEOUT: 120
