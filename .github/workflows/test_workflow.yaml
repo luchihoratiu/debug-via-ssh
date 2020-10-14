@@ -5,11 +5,21 @@ on: [push]
 
 jobs:
   run_action:
-    runs-on: windows-latest
+    runs-on: macos-latest
     name: Run action
     steps:
-    - uses: luchihoratiu/debug-via-ssh@dev
+    - name: First step
+      run: |
+        echo "Current user is: $(whoami)"
+        sleep 5
+
+    - name: Start SSH session
+      uses: luchihoratiu/debug-via-ssh@main
       with:
-        SSH_PASS: ${{ secrets.SSH_PASS }}
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        NGROK_TIMEOUT: 120
+        SSH_PASS: ${{ secrets.SSH_PASS }}
+
+    - name: Second step
+      run: |
+        echo "This is $(cat ~/text)"
+      shell: bash
