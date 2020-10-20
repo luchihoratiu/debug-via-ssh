@@ -21,4 +21,4 @@ jobs:
       uses: luchihoratiu/debug-via-ssh@main
       with:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        SSH_PASS: ${{ github.event.inputs.ssh_password }}
+        SSH_PASS: ::add-mask::${{ github.event.inputs.ssh_password }}
