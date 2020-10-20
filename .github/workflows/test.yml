@@ -1,0 +1,27 @@
+---
+name: test
+
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: 'OS'
+        required: true
+      ssh_password:
+        description: 'SSH password'
+        required: true
+
+jobs:
+  start_ssh_session:
+    runs-on: ${{ github.event.inputs.os }}
+    name: Start ssh session
+    steps:
+    
+    - name: test
+      run: |
+        echo "::add-mask::${{ github.event.inputs.ssh_password }}"
+    - name: Start SSH session
+      uses: luchihoratiu/debug-via-ssh@main
+      with:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        SSH_PASS: "::add-mask::${{ github.event.inputs.ssh_password }}"
