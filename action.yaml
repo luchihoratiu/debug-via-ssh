@@ -1,5 +1,8 @@
 name: 'Debug via SSH'
 description: 'SSH to a GitHub Actions runner using ngrok'
+branding:
+  icon: 'terminal'  
+  color: 'green'
 inputs:
   SSH_PASS:
     description: 'Password for SSH session'
@@ -146,4 +149,3 @@ runs:
 
         echo "# SSH session terminated. Allowing workflow to continue..."
       shell: bash
-
