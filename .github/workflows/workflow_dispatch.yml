@@ -1,0 +1,21 @@
+---
+name: Dispatch a SSH session
+
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: 'Leave only desired OS in the field'
+        required: true
+        default: 'windows-2016 | windows-2019 | ubuntu-16.04 | ubuntu-18.04 | ubuntu-20.04 | macos-10.15 | macos-11.0'
+
+jobs:
+  start_ssh_session:
+    runs-on: ${{ github.event.inputs.os }}
+    name: Start the SSH session
+    steps:
+    - name: Start SSH session
+      uses: luchihoratiu/debug-via-ssh@main
+      with:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        SSH_PASS: ${{ secrets.SSH_PASS }}
