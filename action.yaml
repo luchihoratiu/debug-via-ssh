@@ -134,7 +134,7 @@ runs:
           echo "#"
           echo "# Allow workflow to continue using:"
           echo "#########################################"
-          echo "bash -c \"touch ~/continue\""
+          echo "bash -c \"touch $continue_path\""
           echo "#########################################"
           echo "#"
           echo "# SSH session time left:"
