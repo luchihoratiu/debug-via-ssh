@@ -1,4 +1,4 @@
-name: 'Debug via SSH'
+name: 'Debug via SSH test'
 description: 'SSH to a GitHub Actions runner using ngrok'
 branding:
   icon: 'terminal'  
@@ -134,7 +134,7 @@ runs:
           echo "#"
           echo "# Allow workflow to continue using:"
           echo "#########################################"
-          echo "bash -c \"touch ~/continue\""
+          echo "bash -c \"touch $continue_path\""
           echo "#########################################"
           echo "#"
           echo "# SSH session time left:"
