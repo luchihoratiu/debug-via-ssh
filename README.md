@@ -1,6 +1,6 @@
 # debug-via-ssh
 This GitHub Action allows you to connect to a GitHub Actions runner via SSH for interactive debugging using ngrok.
-
+1
 ## Features
 It works with Ubuntu, macOS and Windows runners.
 

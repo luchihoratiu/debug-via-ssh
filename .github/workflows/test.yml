@@ -1,0 +1,13 @@
+---
+name: Test
+
+on: pull_request
+jobs:
+  commit-message-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post comment
+        uses: KeisukeYamashita/create-comment@v1
+        with:
+          comment: |
+            'Test comment'
