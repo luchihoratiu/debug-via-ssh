@@ -71,7 +71,7 @@ runs:
             .\BvSshServer-Inst.exe -acceptEULA -defaultInstance
 
           printf "# Setting up the SSH server to allow access..."
-            $cfg = new-object -com "BssCfg815.BssCfg815"
+            $cfg = new-object -com "Bitvise.Bsscfg"
             $cfg.settings.SetDefaults()
             $cfg.settings.access.SetDefaults()
             $cfg.settings.access.winGroups.Clear()
