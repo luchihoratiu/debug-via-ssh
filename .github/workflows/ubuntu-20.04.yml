@@ -1,0 +1,27 @@
+name: Ubuntu 20.04
+
+# on:
+#   workflow_call:
+#     inputs:
+#       os:
+#         description: Operating system
+#         required: true
+#         type: string
+
+on:
+  push:
+
+jobs:
+  generic_tests:
+    name: Generic tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Run debug-via-ssh
+        id: dvs
+        uses: luchihoratiu/debug-via-ssh@dev
+        with:
+          SSH_PASS: ${{ secrets.SSH_PASS }}
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      - name: Get address
+        run: |
+          echo ${{steps.dvs.outputs.ssh_address}}

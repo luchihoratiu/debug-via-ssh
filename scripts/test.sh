@@ -1,0 +1,1 @@
+echo "This works with *.sh script!"

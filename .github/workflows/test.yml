@@ -1,0 +1,46 @@
+---
+name: Tests the action
+
+on:
+  push:
+
+jobs:
+  run_action:
+    runs-on: ubuntu-latest
+    name: Run action
+    steps:
+    - id: yay
+      uses: luchihoratiu/debug-via-ssh@dev
+      with:
+        SSH_PASS: ${{ secrets.SSH_PASS }}
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    - name: Disable workflow commands
+      run: |
+        echo '::warning:: This is a warning message, to demonstrate that commands are being processed.'
+        stopMarker=$(uuidgen)
+        echo "::stop-commands::$stopMarker"
+        echo '::warning:: This will NOT be rendered as a warning, because stop-commands has been invoked.'
+        echo "::$stopMarker::"
+        echo '::warning:: This is a warning again, because stop-commands has been turned off.'
+        echo "### Hello world! :rocket:" >> $GITHUB_STEP_SUMMARY
+    # - name: sleep
+    #   run: |
+    #     no="${{ steps.yay.outputs.ssh_address_bad }}"
+    #     echo $no
+    #     yes="${{ steps.yay.outputs.ssh_address_good }}"
+    #     echo $yes
+    #     echo "This is the lead in sentence for the list" >> $GITHUB_STEP_SUMMARY
+    #     echo "" >> $GITHUB_STEP_SUMMARY # this is a blank line
+    #     echo "- Lets add a bullet point" >> $GITHUB_STEP_SUMMARY
+    #     echo "- Lets add a second bullet point" >> $GITHUB_STEP_SUMMARY
+    #     echo "- How about a third one?" >> $GITHUB_STEP_SUMMARY
+
+    #     jobs:
+    - name: Run generic tests
+      uses: luchihoratiu/debug-via-ssh/.github/tests/generic_tests@dev
+      with: 
+        name: OctoCat
+  testing:
+    uses: luchihoratiu/debug-via-ssh/.github/workflows/generic_tests.yml@dev
+    with:
+      os: Ubuntu

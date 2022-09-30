@@ -17,9 +17,35 @@ inputs:
   NGROK_TIMEOUT:
     description: 'Timeout in seconds for ngrok session'
     default: 21500
+# outputs:
+#   ssh_address: 
+#     value: ${{ steps.end.outputs.ssh_address }}
 runs:
   using: "composite"
   steps:
+    - name: Add scripts path
+      run: |
+        # mkdir -p ~/work/_actions/luchihoratiu/debug-via-ssh/otherversion/.github
+        pattern=~/work/_actions/luchihoratiu/debug-via-ssh/**/scripts
+        paths=( $pattern )
+        path="${paths[0]}"
+        chmod +x "${path}"/**
+        echo "$path" >> $GITHUB_PATH
+      shell: bash
+    - name: Check bash
+      run: |
+        echo $PATH
+        test.sh
+      shell: bash
+    - name: Check pwsh
+      run: |
+        test.ps1
+      shell: pwsh
+  
+    # - name: STOP
+    #   run: exit 1
+    #   shell: bash
+
     - name: Check inputs
       run: |
         if [ -z "${{ inputs.SSH_PASS }}" ]
@@ -104,6 +130,7 @@ runs:
       shell: bash
 
     - name: Start ngrok
+      id: end
       run: |
         printf "# Starting ngrok..."
           ./ngrok tcp 22 --log ".ngrok.log" --region "${{ inputs.NGROK_REGION }}" &
@@ -145,6 +172,8 @@ runs:
           
           sleep 10
           time=$((time-10))
+          echo "ssh_address=ok" >> $GITHUB_OUTPUT
+          exit 0
         done
 
         echo "# SSH session terminated. Allowing workflow to continue..."

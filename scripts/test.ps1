@@ -1,0 +1,1 @@
+Write-Output "This works with *.ps1 script!"
