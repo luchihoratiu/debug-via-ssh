@@ -4,8 +4,9 @@ branding:
   icon: 'terminal'  
   color: 'green'
 on:
-workflow_dispatch:
-inputs:
+  workflow_dispatch:
+    inputs:
+      os:
   SSH_PASS:
     description: 'Password for SSH session'
     required: true
