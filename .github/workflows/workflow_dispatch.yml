@@ -1,21 +1,150 @@
----
-name: Dispatch a SSH session
+name: 'Debug via SSH'
 
 on:
   workflow_dispatch:
     inputs:
-      os:
-        description: 'Leave only desired OS in the field'
-        required: true
-        default: 'windows-2016 | windows-2019 | ubuntu-16.04 | ubuntu-18.04 | ubuntu-20.04 | macos-10.15 | macos-11.0'
+        SSH_PASS:
+          description: 'Password for SSH session'
+          required: true
+        NGROK_AUTH_TOKEN:
+          description: 'Authentification token for ngrok'
+          required: true
+        NGROK_REGION:
+          description: 'Region for ngrok session'
+          required: false
+          default: 'us'
+        NGROK_TIMEOUT:
+          description: 'Timeout in seconds for ngrok session'
+          default: 21500
+runs:
+  using: "composite"
+  steps:
+    - name: Check inputs
+      run: |
+        if [ -z "${{ inputs.SSH_PASS }}" ]
+        then
+          echo "SSH_PASS needs to be passed in the 'with' field."
+          exit 1
+        fi
 
-jobs:
-  start_ssh_session:
-    runs-on: ${{ github.event.inputs.os }}
-    name: Start the SSH session
-    steps:
-    - name: Start SSH session
-      uses: luchihoratiu/debug-via-ssh@main
-      with:
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        SSH_PASS: ${{ secrets.SSH_PASS }}
+        if [ -z "${{ inputs.NGROK_AUTH_TOKEN }}" ]
+        then
+          echo "NGROK_AUTH_TOKEN needs to be passed in the 'with' field."
+          exit 1
+        fi
+      shell: bash
+    - name: Meet OS specific prerequisites
+      run: |
+        if('${{ runner.os }}' -eq 'Linux')
+        {
+          printf "# Preparing environment..."
+            echo "ngrok-stable-linux-386.zip" > ngrok_zip_name
+            whoami > ssh_user
+          printf " [DONE]\n\n"
+          
+          echo "# Change the SSH user password"
+            echo "${{ inputs.SSH_PASS }}`n${{ inputs.SSH_PASS }}" | sudo passwd $(cat ssh_user)
+        }
+        elseif('${{ runner.os }}' -eq 'macOS')
+        {
+          printf "# Preparing environment..."
+            echo "ngrok-stable-darwin-amd64.zip" > ngrok_zip_name
+            echo "root" > ssh_user
+          printf " [DONE]\n\n"
+  
+          echo "# Change the SSH user password"
+            echo 'PermitRootLogin yes' | sudo tee -a /etc/ssh/sshd_config >/dev/null
+            sudo launchctl unload /System/Library/LaunchDaemons/ssh.plist
+            sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist
+            echo "${{ inputs.SSH_PASS }}`n${{ inputs.SSH_PASS }}" | sudo passwd "root"
+        }
+        elseif('${{ runner.os }}' -eq 'Windows')
+        {
+          printf "# Preparing environment..."
+            echo "ngrok-stable-windows-amd64.zip" > ngrok_zip_name
+            echo $env:UserName > ssh_user
+          printf " [DONE]\n\n"
+          
+          echo "# Install SSH server"
+            curl https://dl.bitvise.com/BvSshServer-Inst.exe --output BvSshServer-Inst.exe
+            .\BvSshServer-Inst.exe -acceptEULA -defaultInstance
+
+          printf "# Setting up the SSH server to allow access..."
+            $cfg = new-object -com "Bitvise.Bsscfg"
+            $cfg.settings.SetDefaults()
+            $cfg.settings.access.SetDefaults()
+            $cfg.settings.access.winGroups.Clear()
+            $cfg.settings.access.winGroups.new.SetDefaults()
+            $cfg.settings.access.winGroups.new.loginAllowed = $true
+            $cfg.settings.access.winGroups.NewCommit()
+            $cfg.settings.Save()
+          printf " [DONE]\n\n"
+
+          echo "# Add Firewall rule to allow inbound TCP connection on local port 22"
+            New-NetFirewallRule -Name ngrok -DisplayName 'ngrok' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22
+
+          echo "# Start the SSH server"
+            net start BvSshServer
+
+          echo "# Change the SSH user password"
+            net user $env:UserName ${{ inputs.SSH_PASS }}
+        }
+      shell: pwsh
+
+    - name: Install and setup ngrok
+      run: |
+        echo "# Install ngrok"
+          curl https://bin.equinox.io/c/4VmDzA7iaHb/$(cat ngrok_zip_name) --output ngrok.zip
+          unzip ngrok.zip
+          chmod +x ./ngrok
+
+        echo "# Set ngrok with the given authentification token"
+          ./ngrok authtoken ${{ inputs.NGROK_AUTH_TOKEN }}
+      shell: bash
+
+    - name: Start ngrok
+      run: |
+        printf "# Starting ngrok..."
+          ./ngrok tcp 22 --log ".ngrok.log" --region "${{ inputs.NGROK_REGION }}" &
+        printf " [DONE]\n\n"
+
+        printf "# Waiting for '.ngrok.log' file to be properly generated..."
+          while ! grep -osqE "tcp://(.+)" .ngrok.log;do
+            sleep 1
+            if grep -sq "command failed" .ngrok.log
+            then
+              exit 1
+            fi
+          done
+        printf " [DONE]\n\n"
+
+        ssh_string=$(grep -oE "tcp://(.+)" .ngrok.log | sed "s/tcp:\/\//ssh $(cat ssh_user)@/" | sed "s/:/ -p /")
+        continue_path=$(eval echo ~$(cat ssh_user)/continue)
+        time=${{ inputs.NGROK_TIMEOUT }}
+
+        while [ ! -e $continue_path ] && [ $time -gt 1 ]
+        do
+          echo ""
+          echo "#################"
+          echo "# Connect to this runner using:"
+          echo "#########################################"
+          echo $ssh_string
+          echo "#########################################"
+          echo "#"
+          echo "# Allow workflow to continue using:"
+          echo "#########################################"
+          echo "bash -c \"touch $continue_path\""
+          echo "#########################################"
+          echo "#"
+          echo "# SSH session time left:"
+          echo "########################################"
+          printf '#%-14s%dh:%02dm:%02ds%-14s#\n' '' $(($time/3600)) $(($time%3600/60)) $(($time%60)) ''
+          echo "########################################"
+          echo ""
+          
+          sleep 10
+          time=$((time-10))
+        done
+
+        echo "# SSH session terminated. Allowing workflow to continue..."
+      shell: bash
