@@ -3,10 +3,7 @@ description: 'SSH to a GitHub Actions runner using ngrok'
 branding:
   icon: 'terminal'  
   color: 'green'
-on:
-  workflow_dispatch:
-    inputs:
-      os:
+inputs:
   SSH_PASS:
     description: 'Password for SSH session'
     required: true
