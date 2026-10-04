@@ -127,7 +127,7 @@ runs:
               # Authorized SSH keys for administrative users need to be added to C:\ProgramData\ssh\administrators_authorized_keys
               # See: https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_keymanagement#administrative-user
               echo '${{ inputs.SSH_PUBLIC_KEY }}' >> "$env:ProgramData\ssh\administrators_authorized_keys"
-              icacls.exe ""$env:ProgramData\ssh\administrators_authorized_keys"" /inheritance:r /grant ""Administrators:F"" /grant ""SYSTEM:F""
+              icacls.exe "$env:ProgramData\ssh\administrators_authorized_keys" /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
           }
           if ('${{ inputs.SSH_PASS }}')
           {
