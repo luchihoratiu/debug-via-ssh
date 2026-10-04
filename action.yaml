@@ -128,6 +128,9 @@ runs:
               # See: https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_keymanagement#administrative-user
               echo '${{ inputs.SSH_PUBLIC_KEY }}' >> "$env:ProgramData\ssh\administrators_authorized_keys"
               icacls.exe "$env:ProgramData\ssh\administrators_authorized_keys" /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
+              if ($LASTEXITCODE -ne 0) {
+                Exit $LASTEXITCODE
+              }
           }
           if ('${{ inputs.SSH_PASS }}')
           {
