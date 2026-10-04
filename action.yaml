@@ -134,7 +134,13 @@ runs:
         continue_path=$(eval echo ~$(cat ssh_user)/continue)
         time=${{ inputs.NGROK_TIMEOUT }}
 
-        while [ ! -e $continue_path ] && [ $time -gt 1 ]
+        continue_test_cmd=(test ! -e "$continue_path")
+        if [ '${{ runner.os }}' = 'macOS' ]
+        then
+          continue_test_cmd=(sudo "${continue_test_cmd[@]}")
+        fi
+
+        while "${continue_test_cmd[@]}" && [ $time -gt 1 ]
         do
           echo ""
           echo "#################"
