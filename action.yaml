@@ -24,8 +24,10 @@ runs:
   using: "composite"
   steps:
     - name: Check inputs
+      env:
+        INPUTS_SSH_PUBLIC_KEY: ${{ inputs.SSH_PUBLIC_KEY }}
       run: |
-        if [ -z "${{ inputs.SSH_PASS }}" ] && [ -z "${{ inputs.SSH_PUBLIC_KEY }}" ]
+        if [ -z "${{ inputs.SSH_PASS }}" ] && [ -z "$INPUTS_SSH_PUBLIC_KEY" ]
         then
           echo "SSH_PASS or SSH_PUBLIC_KEY needs to be passed in the 'with' field."
           exit 1
@@ -38,6 +40,8 @@ runs:
         fi
       shell: bash
     - name: Meet OS specific prerequisites
+      env:
+        INPUTS_SSH_PUBLIC_KEY: ${{ inputs.SSH_PUBLIC_KEY }}
       run: |
         if('${{ runner.arch }}' -eq 'ARM64')
         {
@@ -54,11 +58,11 @@ runs:
             whoami > ssh_user
           printf " [DONE]\n\n"
 
-          if ('${{ inputs.SSH_PUBLIC_KEY }}')
+          if ($env:INPUTS_SSH_PUBLIC_KEY)
           {
             echo "# Add the SSH public key"
               mkdir -p "/home/$(cat ssh_user)/.ssh"
-              echo '${{ inputs.SSH_PUBLIC_KEY }}' >> "/home/$(cat ssh_user)/.ssh/authorized_keys"
+              echo $env:INPUTS_SSH_PUBLIC_KEY >> "/home/$(cat ssh_user)/.ssh/authorized_keys"
           }
           if ('${{ inputs.SSH_PASS }}')
           {
@@ -78,11 +82,11 @@ runs:
             sudo launchctl unload /System/Library/LaunchDaemons/ssh.plist
             sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist
 
-          if ('${{ inputs.SSH_PUBLIC_KEY }}')
+          if ($env:INPUTS_SSH_PUBLIC_KEY)
           {
             echo "# Add the SSH public key"
               sudo mkdir -p "/var/root/.ssh"
-              echo '${{ inputs.SSH_PUBLIC_KEY }}' | sudo tee -a "/var/root/.ssh/authorized_keys"
+              echo $env:INPUTS_SSH_PUBLIC_KEY | sudo tee -a "/var/root/.ssh/authorized_keys"
           }
           if ('${{ inputs.SSH_PASS }}')
           {
@@ -121,12 +125,12 @@ runs:
           echo "# Start the SSH server"
             net start sshd
 
-          if ('${{ inputs.SSH_PUBLIC_KEY }}')
+          if ($env:INPUTS_SSH_PUBLIC_KEY)
           {
             echo "# Add the SSH public key"
               # Authorized SSH keys for administrative users need to be added to C:\ProgramData\ssh\administrators_authorized_keys
               # See: https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_keymanagement#administrative-user
-              echo '${{ inputs.SSH_PUBLIC_KEY }}' >> "$env:ProgramData\ssh\administrators_authorized_keys"
+              echo $env:INPUTS_SSH_PUBLIC_KEY >> "$env:ProgramData\ssh\administrators_authorized_keys"
               icacls.exe "$env:ProgramData\ssh\administrators_authorized_keys" /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
               if ($LASTEXITCODE -ne 0) {
                 Exit $LASTEXITCODE
