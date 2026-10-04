@@ -28,6 +28,7 @@ runs:
         INPUTS_SSH_PASS: ${{ inputs.SSH_PASS }}
         INPUTS_SSH_PUBLIC_KEY: ${{ inputs.SSH_PUBLIC_KEY }}
         INPUTS_NGROK_AUTH_TOKEN: ${{ inputs.NGROK_AUTH_TOKEN }}
+        INPUTS_NGROK_TIMEOUT: ${{ inputs.NGROK_TIMEOUT }}
       run: |
         if [ -z "$INPUTS_SSH_PASS" ] && [ -z "$INPUTS_SSH_PUBLIC_KEY" ]
         then
@@ -38,6 +39,13 @@ runs:
         if [ -z "$INPUTS_NGROK_AUTH_TOKEN" ]
         then
           echo "NGROK_AUTH_TOKEN needs to be passed in the 'with' field."
+          exit 1
+        fi
+
+        number_pattern='^[1-9][0-9]*$'
+        if ! [[ "$INPUTS_NGROK_TIMEOUT" =~ $number_pattern ]]
+        then
+          echo "NGROK_TIMEOUT needs to be an integer."
           exit 1
         fi
       shell: bash
