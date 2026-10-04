@@ -13,7 +13,7 @@ Do **not** use this action:
 * in jobs where exposing the runner shell would create unacceptable risk;
 * as a persistence, bypass, command-and-control, or unauthorized-access mechanism.
 
-Anyone with the generated SSH endpoint and the configured SSH password can access the runner while the tunnel is active. Treat the SSH password and the printed connection details as sensitive.
+Anyone with the generated SSH endpoint and the configured SSH password (or the private key corresponding to the configured public key) can access the runner while the tunnel is active. Treat the SSH password and/or private key + the printed connection details as sensitive.
 
 This action uses ngrok to create the SSH tunnel. ngrok's own terms, privacy policy, limits, and security model apply. You are responsible for deciding whether ngrok is appropriate for your workflow.
 
@@ -46,7 +46,8 @@ It works with Ubuntu, macOS and Windows runners (x86_64 and ARM).
 ### Mandatory
 
 * **NGROK_AUTH_TOKEN** - The authorization token received from ngrok. See FAQ section for more info.
-* **SSH_PASS** - The password used for starting a SSH session. For Windows runners, this password must respect some [minimum complexity requirements](https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/password-must-meet-complexity-requirements).
+* **SSH_PUBLIC_KEY** (can be omitted, if `SSH_PASS` is specified) - The public key used for starting a SSH session. DO NOT put your private key here - private keys should never leave your computer.
+* **SSH_PASS** (can be omitted, if `SSH_PUBLIC_KEY` is specified) - The password used for starting a SSH session. For Windows runners, this password must respect some [minimum complexity requirements](https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/password-must-meet-complexity-requirements).
 
 ### Optional
 

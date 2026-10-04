@@ -5,8 +5,11 @@ branding:
   color: 'green'
 inputs:
   SSH_PASS:
-    description: 'Password for SSH session'
-    required: true
+    description: 'Password for SSH session. Either this or SSH_PUBLIC_KEY need to be specified.'
+    required: false
+  SSH_PUBLIC_KEY:
+    description: 'Public key for SSH session. Either this or SSH_PASS need to be specified.'
+    required: false
   NGROK_AUTH_TOKEN:
     description: 'Authentification token for ngrok'
     required: true
@@ -21,10 +24,12 @@ runs:
   using: "composite"
   steps:
     - name: Check inputs
+      env:
+        INPUTS_SSH_PUBLIC_KEY: ${{ inputs.SSH_PUBLIC_KEY }}
       run: |
-        if [ -z "${{ inputs.SSH_PASS }}" ]
+        if [ -z "${{ inputs.SSH_PASS }}" ] && [ -z "$INPUTS_SSH_PUBLIC_KEY" ]
         then
-          echo "SSH_PASS needs to be passed in the 'with' field."
+          echo "SSH_PASS or SSH_PUBLIC_KEY needs to be passed in the 'with' field."
           exit 1
         fi
 
@@ -35,6 +40,8 @@ runs:
         fi
       shell: bash
     - name: Meet OS specific prerequisites
+      env:
+        INPUTS_SSH_PUBLIC_KEY: ${{ inputs.SSH_PUBLIC_KEY }}
       run: |
         if('${{ runner.arch }}' -eq 'ARM64')
         {
@@ -50,9 +57,18 @@ runs:
             echo "ngrok-v3-stable-linux-$arch.zip" > ngrok_zip_name
             whoami > ssh_user
           printf " [DONE]\n\n"
-          
-          echo "# Change the SSH user password"
-            echo "${{ inputs.SSH_PASS }}`n${{ inputs.SSH_PASS }}" | sudo passwd $(cat ssh_user)
+
+          if ($env:INPUTS_SSH_PUBLIC_KEY)
+          {
+            echo "# Add the SSH public key"
+              mkdir -p "/home/$(cat ssh_user)/.ssh"
+              echo $env:INPUTS_SSH_PUBLIC_KEY >> "/home/$(cat ssh_user)/.ssh/authorized_keys"
+          }
+          if ('${{ inputs.SSH_PASS }}')
+          {
+            echo "# Change the SSH user password"
+              echo "${{ inputs.SSH_PASS }}`n${{ inputs.SSH_PASS }}" | sudo passwd "$(cat ssh_user)"
+          }
         }
         elseif('${{ runner.os }}' -eq 'macOS')
         {
@@ -61,11 +77,22 @@ runs:
             echo "root" > ssh_user
           printf " [DONE]\n\n"
   
-          echo "# Change the SSH user password"
+          echo "# Permit login as root user"
             echo 'PermitRootLogin yes' | sudo tee -a /etc/ssh/sshd_config >/dev/null
             sudo launchctl unload /System/Library/LaunchDaemons/ssh.plist
             sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist
-            echo "${{ inputs.SSH_PASS }}`n${{ inputs.SSH_PASS }}" | sudo passwd "root"
+
+          if ($env:INPUTS_SSH_PUBLIC_KEY)
+          {
+            echo "# Add the SSH public key"
+              sudo mkdir -p "/var/root/.ssh"
+              echo $env:INPUTS_SSH_PUBLIC_KEY | sudo tee -a "/var/root/.ssh/authorized_keys"
+          }
+          if ('${{ inputs.SSH_PASS }}')
+          {
+            echo "# Change the SSH user password"
+              echo "${{ inputs.SSH_PASS }}`n${{ inputs.SSH_PASS }}" | sudo passwd "root"
+          }
         }
         elseif('${{ runner.os }}' -eq 'Windows')
         {
@@ -98,8 +125,22 @@ runs:
           echo "# Start the SSH server"
             net start sshd
 
-          echo "# Change the SSH user password"
-            net user $env:UserName ${{ inputs.SSH_PASS }}
+          if ($env:INPUTS_SSH_PUBLIC_KEY)
+          {
+            echo "# Add the SSH public key"
+              # Authorized SSH keys for administrative users need to be added to C:\ProgramData\ssh\administrators_authorized_keys
+              # See: https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_keymanagement#administrative-user
+              echo $env:INPUTS_SSH_PUBLIC_KEY >> "$env:ProgramData\ssh\administrators_authorized_keys"
+              icacls.exe "$env:ProgramData\ssh\administrators_authorized_keys" /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
+              if ($LASTEXITCODE -ne 0) {
+                Exit $LASTEXITCODE
+              }
+          }
+          if ('${{ inputs.SSH_PASS }}')
+          {
+            echo "# Change the SSH user password"
+              net user $env:UserName ${{ inputs.SSH_PASS }}
+          }
         }
       shell: pwsh
 
