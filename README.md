@@ -53,6 +53,7 @@ It works with Ubuntu, macOS and Windows runners (x86_64 and ARM).
 
 * **NGROK_REGION** - The region where the ngrok client will connect to host its tunnels. Defaults to **us**.
 * **NGROK_TIMEOUT** - The max amount of time ngrok will host its tunnel. Defaults to **21500** (value is in seconds).
+* **SSH_COMMAND_EXTRA_ARGS** - Extra arguments to append to the printed ssh command. This will be appended to the command exactly as is.
 
 ## How it works
 
