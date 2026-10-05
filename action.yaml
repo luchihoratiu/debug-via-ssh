@@ -173,7 +173,9 @@ runs:
           echo "HOST_KEYS<<EOF" >> $env:GITHUB_OUTPUT
           foreach ($filepath in $host_key_files) {
             $parts = (ssh-keygen -lf $filepath) -Split " "
-            echo "$($parts[1]) $($parts[-1])" >> $env:GITHUB_OUTPUT
+            echo "$($parts[-1])" >> $env:GITHUB_OUTPUT
+            echo "$($parts[1])" >> $env:GITHUB_OUTPUT
+            echo "" >> $env:GITHUB_OUTPUT
           }
           echo EOF >> $env:GITHUB_OUTPUT
       shell: pwsh
