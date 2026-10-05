@@ -50,6 +50,7 @@ runs:
         fi
       shell: bash
     - name: Meet OS specific prerequisites
+      id: sshd-info
       env:
         INPUTS_SSH_PASS: ${{ inputs.SSH_PASS }}
         INPUTS_SSH_PUBLIC_KEY: ${{ inputs.SSH_PUBLIC_KEY }}
@@ -64,6 +65,7 @@ runs:
         }
         if($env:RUNNER_OS -eq 'Linux')
         {
+          $ssh_dir = '/etc/ssh'
           printf "# Preparing environment..."
             echo "ngrok-v3-stable-linux-$arch.zip" > ngrok_zip_name
             whoami > ssh_user
@@ -83,13 +85,14 @@ runs:
         }
         elseif($env:RUNNER_OS -eq 'macOS')
         {
+          $ssh_dir = '/etc/ssh'
           printf "# Preparing environment..."
             echo "ngrok-v3-stable-darwin-$arch.zip" > ngrok_zip_name
             echo "root" > ssh_user
           printf " [DONE]\n\n"
   
           echo "# Permit login as root user"
-            echo 'PermitRootLogin yes' | sudo tee -a /etc/ssh/sshd_config >/dev/null
+            echo 'PermitRootLogin yes' | sudo tee -a $ssh_dir/sshd_config >/dev/null
             sudo launchctl unload /System/Library/LaunchDaemons/ssh.plist
             sudo launchctl load -w /System/Library/LaunchDaemons/ssh.plist
 
@@ -107,6 +110,7 @@ runs:
         }
         elseif($env:RUNNER_OS -eq 'Windows')
         {
+          $ssh_dir = "$env:PROGRAMDATA\ssh"
           printf "# Preparing environment..."
             echo "ngrok-v3-stable-windows-$arch.zip" > ngrok_zip_name
             echo $env:UserName > ssh_user
@@ -153,6 +157,16 @@ runs:
               net user $env:UserName $env:INPUTS_SSH_PASS
           }
         }
+
+        echo "# Get list of host keys"
+          $host_key_files = Get-ChildItem $ssh_dir -Filter 'ssh_host_*_key.pub' | ForEach-Object { Join-Path $ssh_dir $_.Name }
+
+          echo "HOST_KEYS<<EOF" >> $env:GITHUB_OUTPUT
+          foreach ($filepath in $host_key_files) {
+            $parts = (ssh-keygen -lf $filepath) -Split " "
+            echo "$($parts[1]) $($parts[-1])" >> $env:GITHUB_OUTPUT
+          }
+          echo EOF >> $env:GITHUB_OUTPUT
       shell: pwsh
 
     - name: Install and setup ngrok
@@ -172,6 +186,7 @@ runs:
       env:
         INPUTS_NGROK_REGION: ${{ inputs.NGROK_REGION }}
         INPUTS_NGROK_TIMEOUT: ${{ inputs.NGROK_TIMEOUT }}
+        HOST_KEYS: ${{ steps.sshd-info.outputs.HOST_KEYS }}
       run: |
         printf "# Starting ngrok..."
           ./ngrok tcp 22 --log ".ngrok.log" --region "$INPUTS_NGROK_REGION" &
@@ -204,6 +219,11 @@ runs:
           echo "# Connect to this runner using:"
           echo "#########################################"
           echo $ssh_string
+          echo "#########################################"
+          echo "#"
+          echo "# SSH server's host keys:"
+          echo "#########################################"
+          echo "$HOST_KEYS"
           echo "#########################################"
           echo "#"
           echo "# Allow workflow to continue using:"
