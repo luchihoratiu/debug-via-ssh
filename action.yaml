@@ -81,6 +81,9 @@ runs:
           {
             echo "# Change the SSH user password"
               echo "$($env:INPUTS_SSH_PASS)`n$($env:INPUTS_SSH_PASS)" | sudo passwd "$(cat ssh_user)"
+              if ($LASTEXITCODE -ne 0) {
+                Exit $LASTEXITCODE
+              }
           }
         }
         elseif($env:RUNNER_OS -eq 'macOS')
@@ -106,6 +109,9 @@ runs:
           {
             echo "# Change the SSH user password"
               echo "$($env:INPUTS_SSH_PASS)`n$($env:INPUTS_SSH_PASS)" | sudo passwd "root"
+              if ($LASTEXITCODE -ne 0) {
+                Exit $LASTEXITCODE
+              }
           }
         }
         elseif($env:RUNNER_OS -eq 'Windows')
@@ -155,6 +161,9 @@ runs:
           {
             echo "# Change the SSH user password"
               net user $env:UserName $env:INPUTS_SSH_PASS
+              if ($LASTEXITCODE -ne 0) {
+                Exit $LASTEXITCODE
+              }
           }
         }
 
